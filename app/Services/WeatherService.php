@@ -17,6 +17,18 @@ class WeatherService
     $this->forecastUrl = 'https://api.openweathermap.org/data/2.5/forecast';
   }
 
+  //都市名を座標に変換するメソッド
+  public function getCoordinates($cityName)
+  {
+    $response = Http::get("https://api.openweathermap.org/geo/1.0/direct", [
+      'q' => $cityName,
+      'limit' => 1,
+      'appid' => $this->apiKey
+    ]);
+
+    return $response->json();
+  }
+
   // 現在の天気を取得するメソッド
   public function getCurrentWeather($latitude, $longitude)
   {
