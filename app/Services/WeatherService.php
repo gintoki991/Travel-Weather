@@ -124,7 +124,7 @@ class WeatherService
   }
 
   // 現在の天気データを保存するメソッド
-  protected function storeCurrentWeatherData($latitude, $longitude, $data)
+  public function storeCurrentWeatherData($latitude, $longitude, $data)
   {
     try {
       WeatherForecast::updateOrCreate(
@@ -137,7 +137,7 @@ class WeatherService
   }
 
   // 3時間ごとの予報データを保存するメソッド
-  protected function storeForecastData($latitude, $longitude, $data)
+  public function storeForecastData($latitude, $longitude, $data)
   {
     try {
       WeatherForecast::updateOrCreate(
