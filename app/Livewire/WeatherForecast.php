@@ -28,7 +28,7 @@ class WeatherForecast extends Component
 
         // 再度インスタンスを取得することで、Livewireリクエストの際も確実に取得
         $this->weatherService = app(WeatherService::class);
-        $this->weatherData = $this->weatherService->fetchWeatherData($this->cityName);
+        $this->weatherData = $this->weatherService->fetchWeatherData($this->cityName, 'metric', 'ja', $this->selectedDate);
     }
 
     public function previousDay()

@@ -41,26 +41,27 @@ class WeatherService
         }
     }
 
-    // 現在の天気と予報データを共通化し、DBに保存するメソッド
-    public function fetchWeatherData($cityName, $units = 'metric', $lang = 'ja')
+    public function fetchWeatherData($cityName, $units = 'metric', $lang = 'ja', $date = null)
     {
-        $today = now()->toDateString();
+        // ここで日付が指定されていない場合には、デフォルトで当日の日付を使用
+        $targetDate = $date ?? now()->toDateString();
+
+        // $targetDate を使用して、指定した日付のデータをDBから取得
         $existingData = WeatherForecast::where('region', $cityName)
-            ->where('date', $today)
+            ->where('date', $targetDate) // 修正箇所: 特定の日付でフィルタリング
             ->first();
 
+        // DBにデータがあればそのまま返す
         if ($existingData) {
-            // DBから既存データを取得して返す
             return [
                 'current' => json_decode($existingData->daily_data, true),
                 'forecast' => json_decode($existingData->hourly_data, true)
             ];
         }
 
-        // データが存在しない場合にのみAPIを叩く
+        // データが存在しない場合にAPIリクエストを行う
         Log::info("Fetching new data from API for city: $cityName");
 
-        // ここから先はデータが存在しない場合にのみAPIを叩いてデータを取得
         $coordinates = $this->getCoordinates($cityName);
         if (!empty($coordinates)) {
             $latitude = $coordinates[0]['lat'];
@@ -70,8 +71,9 @@ class WeatherService
             $forecastData = $this->getForecast($latitude, $longitude, $units, $lang);
 
             if ($currentWeather && $forecastData) {
-                $this->storeCurrentWeatherData($cityName, $today, $currentWeather);
-                $this->storeForecastData($cityName, $today, $forecastData);
+                // 新しいデータをDBに保存
+                $this->storeCurrentWeatherData($cityName, $targetDate, $currentWeather);
+                $this->storeForecastData($cityName, $targetDate, $forecastData);
 
                 return [
                     'current' => $currentWeather,
@@ -80,7 +82,7 @@ class WeatherService
             }
         }
 
-        return null;
+        return null; // エラーハンドリング: データがない場合
     }
 
     // 現在の天気を取得するメソッド（保存処理を削除）
