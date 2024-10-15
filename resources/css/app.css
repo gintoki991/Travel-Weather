@@ -1,0 +1,24 @@
+.high {
+  color: #ff0000;
+  /* 赤 */
+}
+
+.low {
+  color: #00ff00;
+  /* 緑 */
+}
+
+.cold {
+  color: #0000ff;
+  /* 青 */
+}
+
+.mild {
+  color: #ffa500;
+  /* オレンジ */
+}
+
+.hot {
+  color: #ff6347;
+  /* トマト色 */
+}

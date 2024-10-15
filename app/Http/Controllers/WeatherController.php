@@ -8,6 +8,9 @@ use App\Services\WeatherService;
 class WeatherController extends Controller
 {
     protected $weatherService;
+    protected $cityName;
+    protected $selectedDate;
+    protected $weatherData;
 
     public function __construct(WeatherService $weatherService)
     {
@@ -28,5 +31,35 @@ class WeatherController extends Controller
         } else {
             return response()->json(['error' => 'Location not found or failed to retrieve data'], 404);
         }
+    }
+
+    // 都市名と日付で天気情報と指数を取得するメソッド
+    public function getWeatherData(Request $request)
+    {
+        $cityName = $request->get('city');
+        $selectedDate = $request->get('date', now()->toDateString()); // 日付がなければ今日の日付
+
+        if (empty($cityName)) {
+            return response()->json(['error' => 'City name is required'], 400);
+        }
+
+        // WeatherServiceを使って天気データを取得
+        $forecast = $this->weatherService->fetchWeatherData($cityName, 'metric', 'ja', $selectedDate);
+
+        if (!$forecast) {
+            return response()->json(['error' => 'Weather data not found'], 404);
+        }
+
+        // 指数を計算
+        $indexes = $this->weatherService->calculateIndexes($forecast[0]);
+
+        // レスポンス用のデータを作成
+        $weatherData = [
+            'forecast' => $forecast,
+            'indexes' => $indexes
+        ];
+
+        // JSONでレスポンスを返す
+        return response()->json($weatherData);
     }
 }

@@ -78,17 +78,40 @@
 
     <!-- 下部セクション: 服装や傘の指数 -->
     <div class="indices">
-        <h2 class="yjM">今日明日の指数情報</h2>
-        <p class="yjSt">{{ date('Y年m月d日 H:i', strtotime($selectedDate)) }} 発表</p>
+        <h2 class="yjM">準備物</h2>
+        <p class="yjSt">{{ date('Y年m月d日', strtotime($selectedDate)) }}</p>
         <div class="tabView_content" id="index-01">
+            <!-- 傘指数 -->
             <dl class="indexList_item">
-                <dt>洗濯</dt>
+                <dt>傘</dt>
                 <dd>
-                    <p class="index_value"><span>洗濯指数100</span></p>
-                    <p class="index_text">絶好の洗濯日和</p>
+                    @if(!empty($weatherData['indexes']) && isset($weatherData['indexes']['umbrella']))
+                    <p class="index_value">
+                        <span class="{{ $weatherData['indexes']['umbrella']['index'] > 50 ? 'high' : 'low' }}">
+                            傘指数: {{ $weatherData['indexes']['umbrella']['index'] }}
+                        </span>
+                    </p>
+                    <p class="index_text">{{ $weatherData['indexes']['umbrella']['text'] }}</p>
+                    @else
+                    <p class="index_text">傘指数のデータがありません。</p>
+                    @endif
+                </dd>
+            </dl>
+            <!-- 服装指数 -->
+            <dl class="indexList_item">
+                <dt>服装</dt>
+                <dd>
+                    @if(!empty($weatherData['indexes']) && isset($weatherData['indexes']['clothes']))
+                    <p class="index_value">
+                        <span class="{{ $weatherData['indexes']['clothes']['class'] }}">服装指数</span>
+                    </p>
+                    <p class="index_text">{{ $weatherData['indexes']['clothes']['text'] }}</p>
+                    @else
+                    <p class="index_text">服装指数のデータがありません。</p>
+                    @endif
                 </dd>
             </dl>
         </div>
     </div>
-    @endif
+    @endif <!-- 追加: weatherData['error'] チェックの終了 -->
 </div>

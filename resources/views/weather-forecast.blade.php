@@ -7,7 +7,7 @@
   <!-- Livewire用スタイル -->
   @livewireStyles
   <!-- 必要な追加のCSSファイル -->
-  <link rel="stylesheet" href="/css/app.css">
+  @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
 <body>

@@ -196,4 +196,27 @@ class WeatherService
             Log::error('Error storing forecast data: ' . $e->getMessage());
         }
     }
+
+    public function calculateIndexes($forecast)
+    {
+        $umbrellaIndex = $forecast['pop'] * 100;
+        $umbrellaText = $umbrellaIndex > 50 ? '傘が必要' : '傘は不要';
+
+        $feelsLike = $forecast['feels_like'];
+        if ($feelsLike < 15) {
+            $clothesText = 'コートが必要';
+            $clothesClass = 'cold';
+        } elseif ($feelsLike < 25) {
+            $clothesText = 'シャツや薄手のジャケット';
+            $clothesClass = 'mild';
+        } else {
+            $clothesText = '軽装で大丈夫';
+            $clothesClass = 'hot';
+        }
+
+        return [
+            'umbrella' => ['index' => $umbrellaIndex, 'text' => $umbrellaText],
+            'clothes' => ['text' => $clothesText, 'class' => $clothesClass],
+        ];
+    }
 }
