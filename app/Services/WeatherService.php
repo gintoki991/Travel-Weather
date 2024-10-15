@@ -43,12 +43,12 @@ class WeatherService
 
     public function fetchWeatherData($cityName, $units = 'metric', $lang = 'ja', $date = null)
     {
-        // ここで日付が指定されていない場合には、デフォルトで当日の日付を使用
-        $targetDate = $date ?? now()->toDateString();
+        // 取得された日の日付を使用
+        $fetchDate = now()->toDateString();
 
         // $targetDate を使用して、指定した日付のデータをDBから取得
         $existingData = WeatherForecast::where('region', $cityName)
-            ->where('date', $targetDate) // 修正箇所: 特定の日付でフィルタリング
+            ->where('date', $date ?? $fetchDate) // 日付が指定されない場合は取得された日で検索
             ->first();
 
         // DBにデータがあればそのまま返す
@@ -72,8 +72,8 @@ class WeatherService
 
             if ($currentWeather && $forecastData) {
                 // 新しいデータをDBに保存
-                $this->storeCurrentWeatherData($cityName, $targetDate, $currentWeather);
-                $this->storeForecastData($cityName, $targetDate, $forecastData);
+                $this->storeCurrentWeatherData($cityName, $fetchDate, $currentWeather);
+                $this->storeForecastData($cityName, $fetchDate, $forecastData);
 
                 return [
                     'current' => $currentWeather,
@@ -85,7 +85,7 @@ class WeatherService
         return null; // エラーハンドリング: データがない場合
     }
 
-    // 現在の天気を取得するメソッド（保存処理を削除）
+    // 現在の天気を取得するメソッド
     public function getCurrentWeather($latitude, $longitude, $units = 'metric', $lang = 'ja')
     {
         try {
@@ -119,7 +119,7 @@ class WeatherService
         }
     }
 
-    // 3時間ごとの予報を取得するメソッド（保存処理を削除）
+    // 3時間ごとの予報を取得するメソッド
     public function getForecast($latitude, $longitude, $units = 'metric', $lang = 'ja')
     {
         try {
