@@ -5,7 +5,7 @@ use App\Http\Controllers\WeatherController;
 
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('weather-forecast');
 });
 
 // 都市名で現在の天気情報を取得するエンドポイント
