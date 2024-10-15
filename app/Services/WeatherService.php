@@ -57,6 +57,9 @@ class WeatherService
             ];
         }
 
+        // データが存在しない場合にのみAPIを叩く
+        Log::info("Fetching new data from API for city: $cityName");
+
         // ここから先はデータが存在しない場合にのみAPIを叩いてデータを取得
         $coordinates = $this->getCoordinates($cityName);
         if (!empty($coordinates)) {
@@ -155,26 +158,38 @@ class WeatherService
     }
 
     // 現在の天気データ保存メソッド
-    public function storeCurrentWeatherData($latitude, $longitude, $data)
+    public function storeCurrentWeatherData($cityName, $date, $data)
     {
         try {
-            WeatherForecast::updateOrCreate(
-                ['region' => "$latitude,$longitude", 'date' => now()->toDateString()],
-                ['daily_data' => json_encode($data)] // 現在の天気データを保存
+            $record = WeatherForecast::firstOrCreate(
+                ['region' => $cityName, 'date' => $date],
+                ['daily_data' => json_encode($data)]
             );
+
+            // daily_dataがnullの場合のみ更新
+            if (is_null($record->daily_data)) {
+                $record->daily_data = json_encode($data);
+                $record->save();
+            }
         } catch (\Exception $e) {
             Log::error('Error storing current weather data: ' . $e->getMessage());
         }
     }
 
-    //予報データの保存メソッド
-    public function storeForecastData($latitude, $longitude, $data)
+    // 予報データの保存メソッド
+    public function storeForecastData($cityName, $date, $data)
     {
         try {
-            WeatherForecast::updateOrCreate(
-                ['region' => "$latitude,$longitude", 'date' => now()->toDateString()],
-                ['hourly_data' => json_encode($data)] // 3時間ごとの予報データを保存
+            $record = WeatherForecast::firstOrCreate(
+                ['region' => $cityName, 'date' => $date],
+                ['hourly_data' => json_encode($data)]
             );
+
+            // hourly_dataがnullの場合のみ更新
+            if (is_null($record->hourly_data)) {
+                $record->hourly_data = json_encode($data);
+                $record->save();
+            }
         } catch (\Exception $e) {
             Log::error('Error storing forecast data: ' . $e->getMessage());
         }
