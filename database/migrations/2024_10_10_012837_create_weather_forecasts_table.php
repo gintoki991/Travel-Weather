@@ -8,7 +8,7 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     * 
+     *
      */
     public function up(): void
     {
@@ -16,8 +16,8 @@ return new class extends Migration
             $table->id();
             $table->string('region');
             $table->date('date');
-            $table->json('hourly_data')->nullable();
-            $table->json('daily_data')->nullable();
+            $table->json('hourly_data')->nullable(); // 3時間ごとの予報データ
+            $table->json('daily_data')->nullable();// 現在の天気データ
             $table->timestamps();
 
             // 複合ユニークキー

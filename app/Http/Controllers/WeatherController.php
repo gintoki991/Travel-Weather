@@ -14,17 +14,19 @@ class WeatherController extends Controller
         $this->weatherService = $weatherService;
     }
 
-    // 現在の天気情報を取得するメソッド
-    public function getCurrentWeather($latitude, $longitude)
+    // 都市名で現在の天気情報と5日間の天気予報を取得するメソッド
+    public function getWeatherByCityName($cityName, Request $request)
     {
-        $weatherData = $this->weatherService->getCurrentWeather($latitude, $longitude);
-        return response()->json($weatherData);
-    }
+        $units = $request->get('units', 'metric');
+        $lang = $request->get('lang', 'ja');
 
-    // 5日間の天気予報を取得するメソッド
-    public function getForecast($latitude, $longitude)
-    {
-        $forecastData = $this->weatherService->getForecast($latitude, $longitude);
-        return response()->json($forecastData);
+        // WeatherServiceの共通メソッドを利用して天気データを取得
+        $weatherData = $this->weatherService->fetchWeatherData($cityName, $units, $lang);
+
+        if ($weatherData) {
+            return response()->json($weatherData);
+        } else {
+            return response()->json(['error' => 'Location not found or failed to retrieve data'], 404);
+        }
     }
 }
