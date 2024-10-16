@@ -41,7 +41,7 @@
                     <th>気温</th>
                     @foreach ($weatherData['forecast'] as $forecast)
                     @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
-                    <td>{{ $forecast['temp'] }}°C</td>
+                    <td>{{ round($forecast['temp']) }}°C</td>
                     @endif
                     @endforeach
                 </tr>
@@ -65,7 +65,7 @@
                     <th>風速</th>
                     @foreach ($weatherData['forecast'] as $forecast)
                     @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
-                    <td>{{ $forecast['wind_speed'] }} m/s</td>
+                    <td>{{ round($forecast['wind_speed']) }} m/s</td>
                     @endif
                     @endforeach
                 </tr>
