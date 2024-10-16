@@ -3,7 +3,7 @@
     "type": "module",
     "scripts": {
         "build": "vite build --mode production",
-        "heroku-postbuild": "npm run build",
+        "heroku-postbuild": "npm run build"
     },
     "devDependencies": {
         "axios": "^1.7.4",
