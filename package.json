@@ -2,7 +2,8 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build",
+        "dev": "vite",
+        "build": "vite build --mode production",
         "heroku-postbuild": "npm install && npm run build"
     },
     "devDependencies": {
