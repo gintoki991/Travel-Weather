@@ -41,23 +41,27 @@ class WeatherService
         }
     }
 
-    // 現在の天気と予報データを共通化し、DBに保存するメソッド
-    public function fetchWeatherData($cityName, $units = 'metric', $lang = 'ja')
+    public function fetchWeatherData($cityName, $units = 'metric', $lang = 'ja', $date = null)
     {
-        $today = now()->toDateString();
+        // 取得された日の日付を使用
+        $fetchDate = now()->toDateString();
+
+        // $targetDate を使用して、指定した日付のデータをDBから取得
         $existingData = WeatherForecast::where('region', $cityName)
-            ->where('date', $today)
+            ->where('date', $date ?? $fetchDate) // 日付が指定されない場合は取得された日で検索
             ->first();
 
+        // DBにデータがあればそのまま返す
         if ($existingData) {
-            // DBから既存データを取得して返す
             return [
                 'current' => json_decode($existingData->daily_data, true),
                 'forecast' => json_decode($existingData->hourly_data, true)
             ];
         }
 
-        // ここから先はデータが存在しない場合にのみAPIを叩いてデータを取得
+        // データが存在しない場合にAPIリクエストを行う
+        Log::info("Fetching new data from API for city: $cityName");
+
         $coordinates = $this->getCoordinates($cityName);
         if (!empty($coordinates)) {
             $latitude = $coordinates[0]['lat'];
@@ -67,8 +71,9 @@ class WeatherService
             $forecastData = $this->getForecast($latitude, $longitude, $units, $lang);
 
             if ($currentWeather && $forecastData) {
-                $this->storeCurrentWeatherData($cityName, $today, $currentWeather);
-                $this->storeForecastData($cityName, $today, $forecastData);
+                // 新しいデータをDBに保存
+                $this->storeCurrentWeatherData($cityName, $fetchDate, $currentWeather);
+                $this->storeForecastData($cityName, $fetchDate, $forecastData);
 
                 return [
                     'current' => $currentWeather,
@@ -77,10 +82,10 @@ class WeatherService
             }
         }
 
-        return null;
+        return null; // エラーハンドリング: データがない場合
     }
 
-    // 現在の天気を取得するメソッド（保存処理を削除）
+    // 現在の天気を取得するメソッド
     public function getCurrentWeather($latitude, $longitude, $units = 'metric', $lang = 'ja')
     {
         try {
@@ -114,7 +119,7 @@ class WeatherService
         }
     }
 
-    // 3時間ごとの予報を取得するメソッド（保存処理を削除）
+    // 3時間ごとの予報を取得するメソッド
     public function getForecast($latitude, $longitude, $units = 'metric', $lang = 'ja')
     {
         try {
@@ -155,28 +160,70 @@ class WeatherService
     }
 
     // 現在の天気データ保存メソッド
-    public function storeCurrentWeatherData($latitude, $longitude, $data)
+    public function storeCurrentWeatherData($cityName, $date, $data)
     {
         try {
-            WeatherForecast::updateOrCreate(
-                ['region' => "$latitude,$longitude", 'date' => now()->toDateString()],
-                ['daily_data' => json_encode($data)] // 現在の天気データを保存
+            $record = WeatherForecast::firstOrCreate(
+                ['region' => $cityName, 'date' => $date],
+                ['daily_data' => json_encode($data)]
             );
+
+            // daily_dataがnullの場合のみ更新
+            if (is_null($record->daily_data)) {
+                $record->daily_data = json_encode($data);
+                $record->save();
+            }
         } catch (\Exception $e) {
             Log::error('Error storing current weather data: ' . $e->getMessage());
         }
     }
 
-    //予報データの保存メソッド
-    public function storeForecastData($latitude, $longitude, $data)
+    // 予報データの保存メソッド
+    public function storeForecastData($cityName, $date, $data)
     {
         try {
-            WeatherForecast::updateOrCreate(
-                ['region' => "$latitude,$longitude", 'date' => now()->toDateString()],
-                ['hourly_data' => json_encode($data)] // 3時間ごとの予報データを保存
+            $record = WeatherForecast::firstOrCreate(
+                ['region' => $cityName, 'date' => $date],
+                ['hourly_data' => json_encode($data)]
             );
+
+            // hourly_dataがnullの場合のみ更新
+            if (is_null($record->hourly_data)) {
+                $record->hourly_data = json_encode($data);
+                $record->save();
+            }
         } catch (\Exception $e) {
             Log::error('Error storing forecast data: ' . $e->getMessage());
         }
+    }
+
+    public function calculateIndexes($forecast)
+    {
+        $umbrellaIndex = $forecast['pop'] * 100;
+        // 降水確率に応じたメッセージ
+        if ($umbrellaIndex <= 15) {
+            $umbrellaText = '傘はなくて大丈夫';
+        } elseif ($umbrellaIndex <= 49) {
+            $umbrellaText = '傘があると安心';
+        } else {
+            $umbrellaText = '傘を持っておこう';
+        }
+
+        $feelsLike = $forecast['feels_like'];
+        if ($feelsLike < 15) {
+            $clothesText = 'コートが必要';
+            $clothesClass = 'cold';
+        } elseif ($feelsLike < 25) {
+            $clothesText = 'シャツや薄手のジャケット';
+            $clothesClass = 'mild';
+        } else {
+            $clothesText = '軽装で大丈夫';
+            $clothesClass = 'hot';
+        }
+
+        return [
+            'umbrella' => ['index' => $umbrellaIndex, 'text' => $umbrellaText],
+            'clothes' => ['text' => $clothesText, 'class' => $clothesClass],
+        ];
     }
 }

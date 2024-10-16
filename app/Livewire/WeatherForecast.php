@@ -7,7 +7,7 @@ use App\Services\WeatherService;
 
 class WeatherForecast extends Component
 {
-    public $cityName = 'Tokyo';
+    public $cityName = '東京';
     public $weatherData = [];
     public $selectedDate;
     protected $weatherService;
@@ -16,29 +16,74 @@ class WeatherForecast extends Component
     public function mount()
     {
         $this->selectedDate = now()->toDateString();
-        $this->weatherService = app(WeatherService::class); // app() ヘルパーを使って取得
+        $this->weatherService = app(WeatherService::class);
         $this->getWeatherData();
     }
 
     public function getWeatherData()
     {
         if (empty($this->cityName)) {
+            $this->weatherData = ['error' => '都市名が入力されていません。'];
             return;
         }
 
         // 再度インスタンスを取得することで、Livewireリクエストの際も確実に取得
         $this->weatherService = app(WeatherService::class);
-        $this->weatherData = $this->weatherService->fetchWeatherData($this->cityName);
+        $this->weatherData = $this->weatherService->fetchWeatherData($this->cityName, 'metric', 'ja', $this->selectedDate);
+
+        // 日付ごとの指数を計算
+        $this->calculateWeatherIndexes();
+    }
+
+    public function calculateWeatherIndexes()
+    {
+        if (is_null($this->weatherService)) {
+            $this->weatherService = app(WeatherService::class);
+        }
+
+        // 選択された日付のデータをフィルタリング
+        $forecastForDay = array_filter($this->weatherData['forecast'], function ($forecast) {
+            return date('Y-m-d', $forecast['datetime']) == $this->selectedDate;
+        });
+
+        if (!empty($forecastForDay)) {
+            // 集計用の初期化
+            $totalFeelsLike = 0;
+            $totalPop = 0;
+            $count = count($forecastForDay);
+
+            // 日付内の予報データの合計を計算
+            foreach ($forecastForDay as $forecast) {
+                $totalFeelsLike += $forecast['feels_like'];
+                $totalPop += $forecast['pop'];
+            }
+
+            // 平均を計算
+            $averageFeelsLike = $totalFeelsLike / $count;
+            $averagePop = ($totalPop / $count);
+
+            // 集計されたデータを元に指数を計算
+            $indexes = $this->weatherService->calculateIndexes([
+                'feels_like' => $averageFeelsLike,
+                'pop' => $averagePop
+            ]);
+
+            $this->weatherData['indexes'] = $indexes;
+        } else {
+            $this->weatherData['indexes'] = ['error' => '指数データが見つかりませんでした。'];
+        }
     }
 
     public function previousDay()
     {
         $this->selectedDate = date('Y-m-d', strtotime($this->selectedDate . ' -1 day'));
+        $this->calculateWeatherIndexes();
     }
 
     public function nextDay()
     {
         $this->selectedDate = date('Y-m-d', strtotime($this->selectedDate . ' +1 day'));
+        $this->calculateWeatherIndexes();
     }
 
     public function render()

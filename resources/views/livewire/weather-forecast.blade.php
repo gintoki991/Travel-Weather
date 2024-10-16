@@ -1,4 +1,4 @@
-<div>
+<div class="weather-container">
     @if(isset($weatherData['error']))
     <div class="error-message">
         {{ $weatherData['error'] }}
@@ -14,53 +14,105 @@
             <span>{{ isset($selectedDate) ? date('Y年m月d日', strtotime($selectedDate)) : '日付が未設定です' }}</span>
             <button wire:click="nextDay">次の日</button>
         </div>
-        <!-- 表形式で3時間ごとのデータを表示 -->
-        <table>
-            <thead>
-                <tr>
-                    <th>時刻</th>
-                    <th>天気</th>
-                    <th>気温</th>
-                    <th>降水確率</th>
-                    <th>湿度</th>
-                    <th>風速</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if(isset($weatherData['forecast']) && !empty($weatherData['forecast']))
-                // データがある場合に表示
-                @foreach ($weatherData['forecast'] as $forecast)
-                <tr>
-                    <td>{{ date('H:i', $forecast['datetime']) }}</td>
-                    <td><img src="https://openweathermap.org/img/wn/{{ $forecast['icon'] }}.png" alt="天気アイコン">{{ $forecast['description'] }}</td>
-                    <td>{{ $forecast['temp'] }}°C</td>
-                    <td>{{ $forecast['pop'] * 100 }}%</td>
-                    <td>{{ $forecast['humidity'] }}%</td>
-                    <td>{{ $forecast['wind_speed'] }} m/s</td>
-                </tr>
-                @endforeach
-                @else
-                <p>天気データが見つかりませんでした。</p>
-                @endif
-            </tbody>
-        </table>
+
+        <!-- テーブル形式で表示 -->
+        @if(isset($weatherData['forecast']) && !empty($weatherData['forecast']))
+        <div class="forecast-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>時刻</th>
+                        @foreach ($weatherData['forecast'] as $forecast)
+                        @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
+                        <th>{{ date('H', $forecast['datetime']) }}</th>
+                        @endif
+                        @endforeach
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th>天気</th>
+                        @foreach ($weatherData['forecast'] as $forecast)
+                        @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
+                        <td><img src="https://openweathermap.org/img/wn/{{ $forecast['icon'] }}.png" alt="天気アイコン"></td>
+                        @endif
+                        @endforeach
+                    </tr>
+                    <tr>
+                        <th>気温</th>
+                        @foreach ($weatherData['forecast'] as $forecast)
+                        @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
+                        <td>{{ round($forecast['temp']) }}°C</td>
+                        @endif
+                        @endforeach
+                    </tr>
+                    <tr>
+                        <th>降水確率</th>
+                        @foreach ($weatherData['forecast'] as $forecast)
+                        @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
+                        <td>{{ round($forecast['pop'] * 100) }}%</td>
+                        @endif
+                        @endforeach
+                    </tr>
+                    <tr>
+                        <th>湿度</th>
+                        @foreach ($weatherData['forecast'] as $forecast)
+                        @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
+                        <td>{{ $forecast['humidity'] }}%</td>
+                        @endif
+                        @endforeach
+                    </tr>
+                    <tr>
+                        <th>風速</th>
+                        @foreach ($weatherData['forecast'] as $forecast)
+                        @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
+                        <td>{{ round($forecast['wind_speed']) }} m/s</td>
+                        @endif
+                        @endforeach
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        @else
+        <p>天気データが見つかりませんでした。</p>
+        @endif
     </div>
 
     <!-- 下部セクション: 服装や傘の指数 -->
     <div class="indices">
-        <!-- 指数情報表示 -->
-        <h2 class="yjM">今日明日の指数情報</h2>
-        <p class="yjSt">{{ date('Y年m月d日 H:i', strtotime($selectedDate)) }} 発表</p>
+        <h2 class="yjM">持ち物</h2>
+        <!-- <p class="yjSt">{{ date('Y年m月d日', strtotime($selectedDate)) }}</p> -->
         <div class="tabView_content" id="index-01">
-            <!-- 各指数情報 -->
+            <!-- 傘指数 -->
             <dl class="indexList_item">
-                <dt>洗濯</dt>
+                <dt>傘</dt>
                 <dd>
-                    <p class="index_value"><span>洗濯指数100</span></p>
-                    <p class="index_text">絶好の洗濯日和</p>
+                    @if(!empty($weatherData['indexes']) && isset($weatherData['indexes']['umbrella']))
+                    <p class="index_value">
+                        <span class="{{ $weatherData['indexes']['umbrella']['index'] > 50 ? 'high' : 'low' }}">
+                            傘指数: {{ round($weatherData['indexes']['umbrella']['index']) }}
+                        </span>
+                    </p>
+                    <p class="index_text">{{ $weatherData['indexes']['umbrella']['text'] }}</p>
+                    @else
+                    <p class="index_text">傘指数のデータがありません。</p>
+                    @endif
                 </dd>
             </dl>
-            <!-- 他の指数情報を追加 -->
+            <!-- 服装指数 -->
+            <dl class="indexList_item">
+                <dt>服装</dt>
+                <dd>
+                    @if(!empty($weatherData['indexes']) && isset($weatherData['indexes']['clothes']))
+                    <p class="index_value">
+                        <span class="{{ $weatherData['indexes']['clothes']['class'] }}">服装指数</span>
+                    </p>
+                    <p class="index_text">{{ $weatherData['indexes']['clothes']['text'] }}</p>
+                    @else
+                    <p class="index_text">服装指数のデータがありません。</p>
+                    @endif
+                </dd>
+            </dl>
         </div>
     </div>
     @endif
