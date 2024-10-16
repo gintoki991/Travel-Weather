@@ -4,7 +4,6 @@
     "scripts": {
         "build": "vite build --mode production",
         "heroku-postbuild": "npm run build",
-        "postinstall": "npm install"
     },
     "devDependencies": {
         "axios": "^1.7.4",
