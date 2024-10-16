@@ -88,7 +88,7 @@
                     @if(!empty($weatherData['indexes']) && isset($weatherData['indexes']['umbrella']))
                     <p class="index_value">
                         <span class="{{ $weatherData['indexes']['umbrella']['index'] > 50 ? 'high' : 'low' }}">
-                            傘指数: {{ $weatherData['indexes']['umbrella']['index'] }}
+                            傘指数: {{ round($weatherData['indexes']['umbrella']['index']) }}
                         </span>
                     </p>
                     <p class="index_text">{{ $weatherData['indexes']['umbrella']['text'] }}</p>
