@@ -200,7 +200,14 @@ class WeatherService
     public function calculateIndexes($forecast)
     {
         $umbrellaIndex = $forecast['pop'] * 100;
-        $umbrellaText = $umbrellaIndex > 50 ? '傘が必要' : '傘は不要';
+        // 降水確率に応じたメッセージ
+        if ($umbrellaIndex <= 15) {
+            $umbrellaText = '傘はなくて大丈夫';
+        } elseif ($umbrellaIndex <= 49) {
+            $umbrellaText = '傘があると安心';
+        } else {
+            $umbrellaText = '傘を持っておこう';
+        }
 
         $feelsLike = $forecast['feels_like'];
         if ($feelsLike < 15) {

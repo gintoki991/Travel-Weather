@@ -3,20 +3,16 @@
 
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>天気予報アプリ</title>
-  <!-- Livewire用スタイル -->
+
   @livewireStyles
-  <!-- 必要な追加のCSSファイル -->
   @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
 <body>
-  <!-- Livewireコンポーネントのインクルード -->
+  <!-- Livewireコンポーネント -->
   <livewire:weather-forecast />
-
-  <!-- 他のHTMLコンテンツがあればここに追加 -->
-
-  <!-- Livewire用スクリプト -->
   @livewireScripts
 </body>
 

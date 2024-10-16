@@ -1,4 +1,4 @@
-<div>
+<div class="weather-container">
     @if(isset($weatherData['error']))
     <div class="error-message">
         {{ $weatherData['error'] }}
@@ -15,62 +15,64 @@
             <button wire:click="nextDay">次の日</button>
         </div>
 
-        <!-- 行列を反転させた形式で表示 -->
+        <!-- テーブル形式で表示 -->
         @if(isset($weatherData['forecast']) && !empty($weatherData['forecast']))
-        <table>
-            <thead>
-                <tr>
-                    <th>時刻</th>
-                    @foreach ($weatherData['forecast'] as $forecast)
-                    @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
-                    <th>{{ date('H', $forecast['datetime']) }}</th>
-                    @endif
-                    @endforeach
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <th>天気</th>
-                    @foreach ($weatherData['forecast'] as $forecast)
-                    @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
-                    <td><img src="https://openweathermap.org/img/wn/{{ $forecast['icon'] }}.png" alt="天気アイコン"></td>
-                    @endif
-                    @endforeach
-                </tr>
-                <tr>
-                    <th>気温</th>
-                    @foreach ($weatherData['forecast'] as $forecast)
-                    @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
-                    <td>{{ round($forecast['temp']) }}°C</td>
-                    @endif
-                    @endforeach
-                </tr>
-                <tr>
-                    <th>降水確率</th>
-                    @foreach ($weatherData['forecast'] as $forecast)
-                    @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
-                    <td>{{ $forecast['pop'] * 100 }}%</td>
-                    @endif
-                    @endforeach
-                </tr>
-                <tr>
-                    <th>湿度</th>
-                    @foreach ($weatherData['forecast'] as $forecast)
-                    @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
-                    <td>{{ $forecast['humidity'] }}%</td>
-                    @endif
-                    @endforeach
-                </tr>
-                <tr>
-                    <th>風速</th>
-                    @foreach ($weatherData['forecast'] as $forecast)
-                    @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
-                    <td>{{ round($forecast['wind_speed']) }} m/s</td>
-                    @endif
-                    @endforeach
-                </tr>
-            </tbody>
-        </table>
+        <div class="forecast-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>時刻</th>
+                        @foreach ($weatherData['forecast'] as $forecast)
+                        @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
+                        <th>{{ date('H', $forecast['datetime']) }}</th>
+                        @endif
+                        @endforeach
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th>天気</th>
+                        @foreach ($weatherData['forecast'] as $forecast)
+                        @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
+                        <td><img src="https://openweathermap.org/img/wn/{{ $forecast['icon'] }}.png" alt="天気アイコン"></td>
+                        @endif
+                        @endforeach
+                    </tr>
+                    <tr>
+                        <th>気温</th>
+                        @foreach ($weatherData['forecast'] as $forecast)
+                        @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
+                        <td>{{ round($forecast['temp']) }}°C</td>
+                        @endif
+                        @endforeach
+                    </tr>
+                    <tr>
+                        <th>降水確率</th>
+                        @foreach ($weatherData['forecast'] as $forecast)
+                        @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
+                        <td>{{ round($forecast['pop'] * 100) }}%</td>
+                        @endif
+                        @endforeach
+                    </tr>
+                    <tr>
+                        <th>湿度</th>
+                        @foreach ($weatherData['forecast'] as $forecast)
+                        @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
+                        <td>{{ $forecast['humidity'] }}%</td>
+                        @endif
+                        @endforeach
+                    </tr>
+                    <tr>
+                        <th>風速</th>
+                        @foreach ($weatherData['forecast'] as $forecast)
+                        @if (date('Y-m-d', $forecast['datetime']) == date('Y-m-d', strtotime($selectedDate)))
+                        <td>{{ round($forecast['wind_speed']) }} m/s</td>
+                        @endif
+                        @endforeach
+                    </tr>
+                </tbody>
+            </table>
+        </div>
         @else
         <p>天気データが見つかりませんでした。</p>
         @endif
@@ -78,8 +80,8 @@
 
     <!-- 下部セクション: 服装や傘の指数 -->
     <div class="indices">
-        <h2 class="yjM">準備物</h2>
-        <p class="yjSt">{{ date('Y年m月d日', strtotime($selectedDate)) }}</p>
+        <h2 class="yjM">持ち物</h2>
+        <!-- <p class="yjSt">{{ date('Y年m月d日', strtotime($selectedDate)) }}</p> -->
         <div class="tabView_content" id="index-01">
             <!-- 傘指数 -->
             <dl class="indexList_item">
@@ -113,5 +115,5 @@
             </dl>
         </div>
     </div>
-    @endif <!-- 追加: weatherData['error'] チェックの終了 -->
+    @endif
 </div>
