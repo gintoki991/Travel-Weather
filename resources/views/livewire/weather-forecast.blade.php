@@ -85,31 +85,31 @@
         <div class="tabView_content" id="index-01">
             <!-- 傘指数 -->
             <dl class="indexList_item">
-                <dt>傘</dt>
+                <dt>傘：</dt>
                 <dd>
                     @if(!empty($weatherData['indexes']) && isset($weatherData['indexes']['umbrella']))
-                    <p class="index_value">
+                    <!-- <p class="index_value">
                         <span class="{{ $weatherData['indexes']['umbrella']['index'] > 50 ? 'high' : 'low' }}">
-                            傘指数: {{ round($weatherData['indexes']['umbrella']['index']) }}
+                            傘指数: {{ round($weatherData['indexes']['umbrella']['index']) }} /100
                         </span>
-                    </p>
+                    </p> -->
                     <p class="index_text">{{ $weatherData['indexes']['umbrella']['text'] }}</p>
                     @else
-                    <p class="index_text">傘指数のデータがありません。</p>
+                    <p class="index_text">傘に関するのデータがありません。</p>
                     @endif
                 </dd>
             </dl>
             <!-- 服装指数 -->
             <dl class="indexList_item">
-                <dt>服装</dt>
+                <dt>服装：</dt>
                 <dd>
                     @if(!empty($weatherData['indexes']) && isset($weatherData['indexes']['clothes']))
-                    <p class="index_value">
+                    <!-- <p class="index_value">
                         <span class="{{ $weatherData['indexes']['clothes']['class'] }}">服装指数</span>
-                    </p>
+                    </p> -->
                     <p class="index_text">{{ $weatherData['indexes']['clothes']['text'] }}</p>
                     @else
-                    <p class="index_text">服装指数のデータがありません。</p>
+                    <p class="index_text">服装に関するデータがありません。</p>
                     @endif
                 </dd>
             </dl>
