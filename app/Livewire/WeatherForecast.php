@@ -27,18 +27,32 @@ class WeatherForecast extends Component
             return;
         }
 
-        // 再度インスタンスを取得することで、Livewireリクエストの際も確実に取得
-        $this->weatherService = app(WeatherService::class);
-        $this->weatherData = $this->weatherService->fetchWeatherData($this->cityName, 'metric', 'ja', $this->selectedDate);
+        try {
+            // 再度インスタンスを取得することで、Livewireリクエストの際も確実に取得
+            $this->weatherService = app(WeatherService::class);
+            $this->weatherData = $this->weatherService->fetchWeatherData($this->cityName, 'metric', 'ja', $this->selectedDate);
 
+            // 日付ごとの指数を計算
+            $this->calculateWeatherIndexes();
+        } catch (\Exception $e) {
+            // エラーメッセージを設定
+            $this->weatherData = ['error' => '天気情報の取得に失敗しました。都市名を確認して再入力してください。'];
+        }
         // 日付ごとの指数を計算
         $this->calculateWeatherIndexes();
     }
 
     public function calculateWeatherIndexes()
     {
+        // weatherService が null の場合にインスタンスを取得
         if (is_null($this->weatherService)) {
             $this->weatherService = app(WeatherService::class);
+        }
+
+        // weatherData が空の場合や 'forecast' キーが存在しない場合のチェック
+        if (empty($this->weatherData) || !isset($this->weatherData['forecast'])) {
+            $this->weatherData['indexes'] = ['error' => '天気データがありません。都市名を確認して再度検索してください。'];
+            return;
         }
 
         // 選択された日付のデータをフィルタリング
