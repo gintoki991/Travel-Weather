@@ -94,56 +94,60 @@ class WeatherService
     // 天気データを取得するメソッド
     public function fetchWeatherData($cityName, $units = 'metric', $lang = 'ja', $date = null)
     {
-        $fetchDate = now()->toDateString();
+        try {
+            $fetchDate = now()->toDateString();
 
-        // 座標を取得
-        $coordinates = $this->getCoordinates($cityName);
-        if (isset($coordinates['error'])) {
-            // 座標取得エラー時
-            return ['error' => $coordinates['error']];
+            // 座標を取得
+            $coordinates = $this->getCoordinates($cityName);
+            if (isset($coordinates['error'])) {
+                return ['error' => $coordinates['error']];
+            }
+
+            if (!empty($coordinates)) {
+                $latitude = $coordinates[0]['lat'];
+                $longitude = $coordinates[0]['lon'];
+
+                // 実際に取得された地点名
+                $actualCityName = $coordinates[0]['name'] . ', ' . $coordinates[0]['country'];
+
+                // DB検索時に取得された実際の都市名を使用する
+                $existingData = WeatherForecast::where('region', $actualCityName)
+                    ->where('date', $date ?? $fetchDate)
+                    ->first();
+
+                if ($existingData) {
+                    return [
+                        'current' => json_decode($existingData->daily_data, true),
+                        'forecast' => json_decode($existingData->hourly_data, true),
+                        'region' => $actualCityName
+                    ];
+                }
+
+                $currentWeather = $this->getCurrentWeather($latitude, $longitude, $units, $lang);
+                $forecastData = $this->getForecast($latitude, $longitude, $units, $lang);
+
+                if (isset($currentWeather['error']) || isset($forecastData['error'])) {
+                    return ['error' => 'Failed to retrieve weather data.'];
+                }
+
+                if ($currentWeather && $forecastData) {
+                    $this->storeCurrentWeatherData($actualCityName, $fetchDate, $currentWeather);
+                    $this->storeForecastData($actualCityName, $fetchDate, $forecastData);
+
+                    return [
+                        'current' => $currentWeather,
+                        'forecast' => $forecastData,
+                        'region' => $actualCityName
+                    ];
+                }
+            }
+
+            return ['error' => 'Failed to retrieve weather data.'];
+        } catch (\Exception $e) {
+            // 例外が発生した場合の処理
+            Log::error('Weather data fetch failed: ' . $e->getMessage());
+            return ['error' => 'An unexpected error occurred while retrieving weather data.'];
         }
-
-        if (!empty($coordinates)) {
-            $latitude = $coordinates[0]['lat'];
-            $longitude = $coordinates[0]['lon'];
-
-            // 実際に取得された地点名
-            $actualCityName = $coordinates[0]['name'] . ', ' . $coordinates[0]['country'];
-
-            // DB検索時に取得された実際の都市名を使用する
-            $existingData = WeatherForecast::where('region', $actualCityName)
-                ->where('date', $date ?? $fetchDate)
-                ->first();
-
-            if ($existingData) {
-                return [
-                    'current' => json_decode($existingData->daily_data, true),
-                    'forecast' => json_decode($existingData->hourly_data, true),
-                    'region' => $actualCityName // 実際の地点名を返す
-                ];
-            }
-
-            $currentWeather = $this->getCurrentWeather($latitude, $longitude, $units, $lang);
-            $forecastData = $this->getForecast($latitude, $longitude, $units, $lang);
-
-            if (isset($currentWeather['error']) || isset($forecastData['error'])) {
-                return ['error' => 'Failed to retrieve weather data.'];
-            }
-
-            if ($currentWeather && $forecastData) {
-                // 実際の都市名で保存
-                $this->storeCurrentWeatherData($actualCityName, $fetchDate, $currentWeather);
-                $this->storeForecastData($actualCityName, $fetchDate, $forecastData);
-
-                return [
-                    'current' => $currentWeather,
-                    'forecast' => $forecastData,
-                    'region' => $actualCityName // 実際の地点名を返す
-                ];
-            }
-        }
-
-        return ['error' => 'Failed to retrieve weather data.'];
     }
 
     // 現在の天気データ取得メソッド
