@@ -37,6 +37,8 @@ class WeatherForecast extends Component
 
     public function updatedCityName()
     {
+        Log::info('Updated citySuggestions: ' . json_encode($this->citySuggestions));
+
         if (strlen($this->cityName) < 2) {
             $this->citySuggestions = [];
             return;
@@ -77,20 +79,22 @@ class WeatherForecast extends Component
 
     public function getWeatherData()
     {
-        // バリデーションを実行
         $this->validate();
 
         try {
-            // WeatherService のインスタンスを取得
             $this->weatherService = app(WeatherService::class);
-            // 天気データを取得
-            $this->weatherData = $this->weatherService->fetchWeatherData($this->cityName, 'metric', 'ja', $this->selectedDate);
-            // 日付ごとの指数を計算
+            $weatherResponse = $this->weatherService->fetchWeatherData($this->cityName, 'metric', 'ja', $this->selectedDate);
+
+            if ($weatherResponse) {
+                $this->weatherData = $weatherResponse;
+                $this->cityName = $weatherResponse['region']; // 実際の地点名を使用
+            } else {
+                $this->weatherData = ['error' => '天気情報が取得できませんでした。'];
+            }
+
             $this->calculateWeatherIndexes();
         } catch (\Exception $e) {
-            // エラーメッセージを設定
-            $this->weatherData = ['error' => '天気情報の取得に失敗しました。都市名を確認して再入力してください。'];
-            Log::error('Error fetching weather data: ' . $e->getMessage());
+            $this->weatherData = ['error' => '天気情報の取得に失敗しました。'];
         }
     }
 

@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\WeatherForecast;
+use Illuminate\Support\Facades\Cache;
 
 class WeatherService
 {
@@ -46,15 +47,29 @@ class WeatherService
     // 都市名を座標に変換するメソッド
     public function getCoordinates($cityName)
     {
+        // キャッシュキーを都市名で作成
+        $cacheKey = 'coordinates_' . strtolower($cityName);
+
+        // キャッシュにデータがあればそれを返す
+        if (Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
+
         try {
             $response = Http::get("https://api.openweathermap.org/geo/1.0/direct", [
                 'q' => $cityName,
                 'limit' => 1,
-                'appid' => $this->apiKey
+                'appid' => $this->apiKey,
+                'country' => 'JP'  // 日本を優先的に検索
             ]);
 
             if ($response->successful()) {
                 return $response->json();
+
+                // キャッシュに座標データを保存（1日間）
+                Cache::put($cacheKey, $coordinates, now()->addDay());
+
+                return $coordinates;
             } else {
                 Log::error('Geocoding API error: ' . $response->body());
                 return null;
@@ -67,46 +82,47 @@ class WeatherService
 
     public function fetchWeatherData($cityName, $units = 'metric', $lang = 'ja', $date = null)
     {
-        // 取得された日の日付を使用
         $fetchDate = now()->toDateString();
 
-        // $targetDate を使用して、指定した日付のデータをDBから取得
-        $existingData = WeatherForecast::where('region', $cityName)
-            ->where('date', $date ?? $fetchDate) // 日付が指定されない場合は取得された日で検索
-            ->first();
-
-        // DBにデータがあればそのまま返す
-        if ($existingData) {
-            return [
-                'current' => json_decode($existingData->daily_data, true),
-                'forecast' => json_decode($existingData->hourly_data, true)
-            ];
-        }
-
-        // データが存在しない場合にAPIリクエストを行う
-        Log::info("Fetching new data from API for city: $cityName");
-
+        // 座標を取得
         $coordinates = $this->getCoordinates($cityName);
         if (!empty($coordinates)) {
             $latitude = $coordinates[0]['lat'];
             $longitude = $coordinates[0]['lon'];
 
+            // 実際に取得された地点名（英語表記）
+            $actualCityName = $coordinates[0]['name'] . ', ' . $coordinates[0]['country'];
+
+            // DB検索時に取得された実際の都市名を使用する
+            $existingData = WeatherForecast::where('region', $actualCityName)
+                ->where('date', $date ?? $fetchDate)
+                ->first();
+
+            if ($existingData) {
+                return [
+                    'current' => json_decode($existingData->daily_data, true),
+                    'forecast' => json_decode($existingData->hourly_data, true),
+                    'region' => $actualCityName // 実際の地点名を返す
+                ];
+            }
+
             $currentWeather = $this->getCurrentWeather($latitude, $longitude, $units, $lang);
             $forecastData = $this->getForecast($latitude, $longitude, $units, $lang);
 
             if ($currentWeather && $forecastData) {
-                // 新しいデータをDBに保存
-                $this->storeCurrentWeatherData($cityName, $fetchDate, $currentWeather);
-                $this->storeForecastData($cityName, $fetchDate, $forecastData);
+                // 実際の都市名で保存
+                $this->storeCurrentWeatherData($actualCityName, $fetchDate, $currentWeather);
+                $this->storeForecastData($actualCityName, $fetchDate, $forecastData);
 
                 return [
                     'current' => $currentWeather,
-                    'forecast' => $forecastData
+                    'forecast' => $forecastData,
+                    'region' => $actualCityName // 実際の地点名を返す
                 ];
             }
         }
 
-        return null; // エラーハンドリング: データがない場合
+        return null; // エラーハンドリング
     }
 
     // 現在の天気を取得するメソッド

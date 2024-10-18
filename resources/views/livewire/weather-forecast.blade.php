@@ -9,12 +9,12 @@
             <label for="cityNameInput">都市名</label>
             <input id="cityNameInput"
                 type="text"
-                wire:model="cityName"
-                list="citySuggestionsList"
-                placeholder="都市名を入力してください"
-                class="city-input">
+                wire:model.debounce.500ms="cityName" 
+            list="citySuggestionsList"
+            placeholder="都市名を入力してください"
+            class="city-input">
 
-            <!-- datalist を使ってサジェストリストを表示 -->
+            <!-- datalistを使ってサジェストリストを表示 -->
             <datalist id="citySuggestionsList">
                 @foreach($citySuggestions as $suggestion)
                 <option value="{{ $suggestion }}"></option>
@@ -33,6 +33,9 @@
 
             <!-- 検索ボタン -->
             <button wire:click="getWeatherData" class="search-button">検索</button>
+
+            <!-- 実際に選択された地点名を表示 -->
+            <h2>{{ $cityName }}</h2>
         </div>
 
         <div class="date-navigation">
