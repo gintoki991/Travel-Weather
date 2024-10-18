@@ -9,12 +9,12 @@
             <label for="cityNameInput">都市名</label>
             <input id="cityNameInput"
                 type="text"
-                wire:model.debounce.500ms="cityName" 
-            list="citySuggestionsList"
-            placeholder="都市名を入力してください"
-            class="city-input">
+                wire:model.debounce.500ms="cityName"
+                list="citySuggestionsList"
+                placeholder="都市名を入力してください"
+                class="city-input"
 
-            <!-- datalistを使ってサジェストリストを表示 -->
+                <!-- datalistを使ってサジェストリストを表示 -->
             <datalist id="citySuggestionsList">
                 @foreach($citySuggestions as $suggestion)
                 <option value="{{ $suggestion }}"></option>

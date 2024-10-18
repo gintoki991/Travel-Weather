@@ -20,9 +20,17 @@ class WeatherService
         $this->forecastUrl = 'https://api.openweathermap.org/data/2.5/forecast';
     }
 
-    //ユーザーが入力した都市名に近い候補を取得
+    // ユーザーが入力した都市名に近い候補を取得
     public function getCitySuggestions($cityName)
     {
+        // キャッシュキーを都市名で作成
+        $cacheKey = 'city_suggestions_' . strtolower($cityName);
+
+        // キャッシュにデータがあればそれを返す
+        if (Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
+
         try {
             $response = Http::get("https://api.openweathermap.org/geo/1.0/direct", [
                 'q' => $cityName,
@@ -32,15 +40,18 @@ class WeatherService
 
             if ($response->successful()) {
                 $cities = $response->json();
-                Log::info('Geocoding API successful response: ' . json_encode($cities));
+
+                // キャッシュに都市候補を保存（1日間）
+                Cache::put($cacheKey, $cities, now()->addDay());
+
                 return $cities;
             } else {
                 Log::error('Geocoding API error: ' . $response->body());
-                return [];
+                return ['error' => 'Failed to retrieve city suggestions from API'];
             }
         } catch (\Exception $e) {
             Log::error('Geocoding API exception: ' . $e->getMessage());
-            return [];
+            return ['error' => 'An error occurred while fetching city suggestions'];
         }
     }
 
@@ -64,7 +75,7 @@ class WeatherService
             ]);
 
             if ($response->successful()) {
-                return $response->json();
+                $coordinates = $response->json();
 
                 // キャッシュに座標データを保存（1日間）
                 Cache::put($cacheKey, $coordinates, now()->addDay());
@@ -72,25 +83,31 @@ class WeatherService
                 return $coordinates;
             } else {
                 Log::error('Geocoding API error: ' . $response->body());
-                return null;
+                return ['error' => 'Failed to retrieve coordinates from API'];
             }
         } catch (\Exception $e) {
             Log::error('Geocoding API exception: ' . $e->getMessage());
-            return null;
+            return ['error' => 'An error occurred while fetching coordinates'];
         }
     }
 
+    // 天気データを取得するメソッド
     public function fetchWeatherData($cityName, $units = 'metric', $lang = 'ja', $date = null)
     {
         $fetchDate = now()->toDateString();
 
         // 座標を取得
         $coordinates = $this->getCoordinates($cityName);
+        if (isset($coordinates['error'])) {
+            // 座標取得エラー時
+            return ['error' => $coordinates['error']];
+        }
+
         if (!empty($coordinates)) {
             $latitude = $coordinates[0]['lat'];
             $longitude = $coordinates[0]['lon'];
 
-            // 実際に取得された地点名（英語表記）
+            // 実際に取得された地点名
             $actualCityName = $coordinates[0]['name'] . ', ' . $coordinates[0]['country'];
 
             // DB検索時に取得された実際の都市名を使用する
@@ -109,6 +126,10 @@ class WeatherService
             $currentWeather = $this->getCurrentWeather($latitude, $longitude, $units, $lang);
             $forecastData = $this->getForecast($latitude, $longitude, $units, $lang);
 
+            if (isset($currentWeather['error']) || isset($forecastData['error'])) {
+                return ['error' => 'Failed to retrieve weather data.'];
+            }
+
             if ($currentWeather && $forecastData) {
                 // 実際の都市名で保存
                 $this->storeCurrentWeatherData($actualCityName, $fetchDate, $currentWeather);
@@ -122,10 +143,10 @@ class WeatherService
             }
         }
 
-        return null; // エラーハンドリング
+        return ['error' => 'Failed to retrieve weather data.'];
     }
 
-    // 現在の天気を取得するメソッド
+    // 現在の天気データ取得メソッド
     public function getCurrentWeather($latitude, $longitude, $units = 'metric', $lang = 'ja')
     {
         try {
@@ -151,11 +172,11 @@ class WeatherService
                 ];
             } else {
                 Log::error('Current Weather API error: ' . $response->body());
-                return null;
+                return ['error' => 'Failed to retrieve current weather data'];
             }
         } catch (\Exception $e) {
             Log::error('Current Weather API exception: ' . $e->getMessage());
-            return null;
+            return ['error' => 'An error occurred while fetching current weather data'];
         }
     }
 
@@ -191,11 +212,11 @@ class WeatherService
                 return $forecastData;
             } else {
                 Log::error('Forecast API error: ' . $response->body());
-                return null;
+                return ['error' => 'Failed to retrieve weather forecast data'];
             }
         } catch (\Exception $e) {
             Log::error('Forecast API exception: ' . $e->getMessage());
-            return null;
+            return ['error' => 'An error occurred while fetching weather forecast data'];
         }
     }
 

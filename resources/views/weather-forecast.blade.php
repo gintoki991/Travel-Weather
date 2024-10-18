@@ -14,9 +14,9 @@
 </head>
 
 <body>
+  @livewireScripts
   <!-- Livewireコンポーネント -->
   <livewire:weather-forecast />
-  @livewireScripts
 
   <!-- 生成されたJavaScriptファイルを直接参照 -->
   <script src="/build/assets/app-_lwbCXxa.js" type="module"></script>
