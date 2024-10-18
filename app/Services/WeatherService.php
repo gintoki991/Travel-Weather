@@ -19,6 +19,30 @@ class WeatherService
         $this->forecastUrl = 'https://api.openweathermap.org/data/2.5/forecast';
     }
 
+    //ユーザーが入力した都市名に近い候補を取得
+    public function getCitySuggestions($cityName)
+    {
+        try {
+            $response = Http::get("https://api.openweathermap.org/geo/1.0/direct", [
+                'q' => $cityName,
+                'limit' => 5,
+                'appid' => $this->apiKey
+            ]);
+
+            if ($response->successful()) {
+                $cities = $response->json();
+                Log::info('Geocoding API successful response: ' . json_encode($cities));
+                return $cities;
+            } else {
+                Log::error('Geocoding API error: ' . $response->body());
+                return [];
+            }
+        } catch (\Exception $e) {
+            Log::error('Geocoding API exception: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     // 都市名を座標に変換するメソッド
     public function getCoordinates($cityName)
     {

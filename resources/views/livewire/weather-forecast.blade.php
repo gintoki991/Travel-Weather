@@ -6,9 +6,35 @@
     @else
     <div class="weather-forecast">
         <div class="city-search">
-            <input type="text" wire:model="cityName" placeholder="都市名を入力">
-            <button wire:click="getWeatherData">検索</button>
+            <label for="cityNameInput">都市名</label>
+            <input id="cityNameInput"
+                type="text"
+                wire:model="cityName"
+                list="citySuggestionsList"
+                placeholder="都市名を入力してください"
+                class="city-input">
+
+            <!-- datalist を使ってサジェストリストを表示 -->
+            <datalist id="citySuggestionsList">
+                @foreach($citySuggestions as $suggestion)
+                <option value="{{ $suggestion }}"></option>
+                @endforeach
+            </datalist>
+
+            <!-- バリデーションエラーメッセージの表示 -->
+            @error('cityName')
+            <div class="error-message">{{ $message }}</div>
+            @enderror
+
+            <!-- サジェストがない場合のメッセージ -->
+            @if(strlen($cityName) > 2 && count($citySuggestions) === 0)
+            <div class="no-suggestions">選択できる都市名がありません。この都市名では検索できません。</div>
+            @endif
+
+            <!-- 検索ボタン -->
+            <button wire:click="getWeatherData" class="search-button">検索</button>
         </div>
+
         <div class="date-navigation">
             <button wire:click="previousDay">前の日</button>
             <span>{{ isset($selectedDate) ? date('Y年m月d日', strtotime($selectedDate)) : '日付が未設定です' }}</span>
@@ -95,7 +121,7 @@
                     </p> -->
                     <p class="index_text">{{ $weatherData['indexes']['umbrella']['text'] }}</p>
                     @else
-                    <p class="index_text">傘に関するのデータがありません。</p>
+                    <p class="index_text">傘に関するデータがありません。</p>
                     @endif
                 </dd>
             </dl>
@@ -117,3 +143,13 @@
     </div>
     @endif
 </div>
+
+<!-- <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const input = document.getElementById('cityNameInput');
+        input.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === 'Backspace') {
+            }
+        });
+    });
+</script> -->

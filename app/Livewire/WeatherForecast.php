@@ -3,14 +3,29 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use App\Http\Requests\WeatherRequest;
 use App\Services\WeatherService;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class WeatherForecast extends Component
 {
-    public $cityName = '東京';
+    public $cityName = '';
     public $weatherData = [];
     public $selectedDate;
+    public $citySuggestions = [];
+
     protected $weatherService;
+
+    // バリデーションルールとメッセージの定義
+    protected $rules = [
+        'cityName' => 'required|string',
+    ];
+
+    protected $messages = [
+        'cityName.required' => '都市名は必須です。',
+        'cityName.string' => '都市名は文字列で入力してください。',
+    ];
 
     // コンストラクタで WeatherService を初期化せずに、必要なときにインスタンスを取得
     public function mount()
@@ -20,26 +35,63 @@ class WeatherForecast extends Component
         $this->getWeatherData();
     }
 
-    public function getWeatherData()
+    public function updatedCityName()
     {
-        if (empty($this->cityName)) {
-            $this->weatherData = ['error' => '都市名が入力されていません。'];
+        if (strlen($this->cityName) < 2) {
+            $this->citySuggestions = [];
             return;
         }
 
         try {
-            // 再度インスタンスを取得することで、Livewireリクエストの際も確実に取得
-            $this->weatherService = app(WeatherService::class);
-            $this->weatherData = $this->weatherService->fetchWeatherData($this->cityName, 'metric', 'ja', $this->selectedDate);
+            $response = Http::get("https://api.openweathermap.org/geo/1.0/direct", [
+                'q' => $this->cityName,
+                'limit' => 5,
+                'appid' => config('services.openweather.api_key')
+            ]);
 
+            if ($response->successful()) {
+                $cities = $response->json();
+                $uniqueCities = [];
+
+                foreach ($cities as $city) {
+                    $key = strtolower($city['name']) . ',' . ($city['country'] ?? '');
+                    if (!array_key_exists($key, $uniqueCities)) {
+                        $uniqueCities[$key] = $city['name'] . ', ' . $city['country'];
+                    }
+                }
+
+                $this->citySuggestions = array_values($uniqueCities);
+            } else {
+                $this->citySuggestions = [];
+            }
+        } catch (\Exception $e) {
+            $this->citySuggestions = [];
+        }
+    }
+
+    public function setCityName($city)
+    {
+        $this->cityName = $city;
+        $this->citySuggestions = []; // サジェストリストをクリア
+    }
+
+    public function getWeatherData()
+    {
+        // バリデーションを実行
+        $this->validate();
+
+        try {
+            // WeatherService のインスタンスを取得
+            $this->weatherService = app(WeatherService::class);
+            // 天気データを取得
+            $this->weatherData = $this->weatherService->fetchWeatherData($this->cityName, 'metric', 'ja', $this->selectedDate);
             // 日付ごとの指数を計算
             $this->calculateWeatherIndexes();
         } catch (\Exception $e) {
             // エラーメッセージを設定
             $this->weatherData = ['error' => '天気情報の取得に失敗しました。都市名を確認して再入力してください。'];
+            Log::error('Error fetching weather data: ' . $e->getMessage());
         }
-        // 日付ごとの指数を計算
-        $this->calculateWeatherIndexes();
     }
 
     public function calculateWeatherIndexes()
@@ -105,6 +157,7 @@ class WeatherForecast extends Component
         return view('livewire.weather-forecast', [
             'weatherData' => $this->weatherData,
             'selectedDate' => $this->selectedDate,
+            'citySuggestions' => $this->citySuggestions,
         ]);
     }
 }
